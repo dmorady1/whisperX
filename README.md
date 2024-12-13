@@ -37,7 +37,6 @@ This repository provides fast automatic speech recognition (70x realtime with la
 - ⚡️ Batched inference for 70x realtime transcription using whisper large-v2
 - 🪶 [faster-whisper](https://github.com/guillaumekln/faster-whisper) backend, requires <8GB gpu memory for large-v2 with beam_size=5
 - 🎯 Accurate word-level timestamps using wav2vec2 alignment
-- 👯‍♂️ Multispeaker ASR using speaker diarization from [pyannote-audio](https://github.com/pyannote/pyannote-audio) (speaker ID labels) 
 - 🗣️ VAD preprocessing, reduces hallucination & batching with no WER degradation
 
 > #### WhisperX improvements
@@ -49,8 +48,6 @@ This repository provides fast automatic speech recognition (70x realtime with la
 >  - Unique speakers added to result (inspiration from #126)
 >  - **Option to detect language per segment, very useful for longer audio with frequent language switches.**
 >  - Changed `setup.py` to `pyproject.toml`
->  - Added VAD min duration on and off parameters to PyAnnote. The current implementation splits even on sub>  -second pauses which is rather ineffective sometimes. 
->  - Pyannote.audio bumped to 3.3.2
 >
 > **Multi-language audio handling**  
 > Greatly improves by adding the argument for language detection every 30 second chunk. Run it like this: `whisperx audio.mp3 --detect_language_per_segment`
@@ -111,10 +108,8 @@ $ pip install -e .
 You may also need to install ffmpeg, rust etc. Follow openAI instructions here https://github.com/openai/whisper#setup.
 
 ### Speaker Diarization
-To **enable Speaker Diarization**, include your Hugging Face access token (read) that you can generate from [Here](https://huggingface.co/settings/tokens) after the `--hf_token` argument and accept the user agreement for the following models: [Segmentation](https://huggingface.co/pyannote/segmentation-3.0) and [Speaker-Diarization-3.1](https://huggingface.co/pyannote/speaker-diarization-3.1) (if you choose to use Speaker-Diarization 2.x, follow requirements [here](https://huggingface.co/pyannote/speaker-diarization) instead.)
 
 > **Note**<br>
-> As of Oct 11, 2023, there is a known issue regarding slow performance with pyannote/Speaker-Diarization-3.0 in whisperX. It is due to dependency conflicts between faster-whisper and pyannote-audio 3.0.0. Please see [this issue](https://github.com/m-bain/whisperX/issues/499) for more details and potential workarounds.
 
 
 <h2 align="left" id="example">Usage 💬 (command line)</h2>
@@ -291,11 +286,9 @@ This work, and my PhD, is supported by the [VGG (Visual Geometry Group)](https:/
 
 Of course, this is builds on [openAI's whisper](https://github.com/openai/whisper).
 Borrows important alignment code from [PyTorch tutorial on forced alignment](https://pytorch.org/tutorials/intermediate/forced_alignment_with_torchaudio_tutorial.html)
-And uses the wonderful pyannote VAD / Diarization https://github.com/pyannote/pyannote-audio
 
 
 Valuable VAD & Diarization Models from:
-- [pyannote audio][https://github.com/pyannote/pyannote-audio]
 - [silero vad][https://github.com/snakers4/silero-vad]
 
 Great backend from [faster-whisper](https://github.com/guillaumekln/faster-whisper) and [CTranslate2](https://github.com/OpenNMT/CTranslate2)

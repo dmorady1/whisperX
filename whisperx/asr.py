@@ -9,11 +9,11 @@ import torch
 from transformers import Pipeline
 from transformers.pipelines.pt_utils import PipelineIterator
 
-from whisperx.utils import LANGUAGES
 import whisperx.vads
+from whisperx.utils import LANGUAGES
 
-from .audio import N_SAMPLES, SAMPLE_RATE, load_audio, log_mel_spectrogram
-from .types import SingleSegment, TranscriptionResult
+from whisperx.audio import N_SAMPLES, SAMPLE_RATE, load_audio, log_mel_spectrogram
+from whisperx.types import SingleSegment, TranscriptionResult
 
 
 def find_numeral_symbol_tokens(tokenizer):
@@ -41,7 +41,6 @@ class WhisperModel(faster_whisper.WhisperModel):
         detect_language_per_segment=False,
         possible_languages: list[str] = ["<|en|>"],
     ):
-
         batch_size = features.shape[0]
         all_tokens = []
         prompt_reset_since = 0
@@ -58,7 +57,6 @@ class WhisperModel(faster_whisper.WhisperModel):
 
         prompts = None
         if detect_language_per_segment:
-
             detected_languages = self.model.detect_language(encoder_output)
 
             detected_languages = [
@@ -268,13 +266,8 @@ class FasterWhisperPipeline(Pipeline):
                 yield {"inputs": audio[f1:f2]}
 
         # Pre-process audio and merge chunks as defined by the respective VAD child class
-        # In case vad_model is manually assigned (see 'load_model') follow the functionality of pyannote toolkit
-        if issubclass(type(self.vad_model), whisperx.vads.Vad):
-            waveform = self.vad_model.preprocess_audio(audio)
-            merge_chunks = self.vad_model.merge_chunks
-        else:
-            waveform = whisperx.vads.Pyannote.preprocess_audio(audio)
-            merge_chunks = whisperx.vads.Pyannote.merge_chunks
+        waveform = self.vad_model.preprocess_audio(audio)
+        merge_chunks = self.vad_model.merge_chunks
 
         vad_segments = self.vad_model(
             {"waveform": waveform, "sample_rate": SAMPLE_RATE}
@@ -285,7 +278,7 @@ class FasterWhisperPipeline(Pipeline):
             onset=self._vad_params["vad_onset"],
             offset=self._vad_params["vad_offset"],
             min_duration_on=self._vad_params["vad_min_duration_on"],
-            min_duration_off=self._vad_params["vad_min_duration_off"],        
+            min_duration_off=self._vad_params["vad_min_duration_off"],
         )
 
         if not possible_languages:
@@ -326,7 +319,7 @@ class FasterWhisperPipeline(Pipeline):
         if self.suppress_numerals:
             previous_suppress_tokens = self.options.suppress_tokens
             numeral_symbol_tokens = find_numeral_symbol_tokens(self.tokenizer)
-            print(f"Suppressing numeral and symbol tokens")
+            print("Suppressing numeral and symbol tokens")
             new_suppressed_tokens = numeral_symbol_tokens + self.options.suppress_tokens
             new_suppressed_tokens = list(set(new_suppressed_tokens))
             self.options = self.options._replace(suppress_tokens=new_suppressed_tokens)
@@ -491,8 +484,6 @@ def load_model(
         "chunk_size": 30,  # needed by silero since binarization happens before merge_chunks
         "vad_onset": 0.500,
         "vad_offset": 0.363,
-        "vad_min_duration_on": 0.0,
-        "vad_min_duration_off": 0.0,
     }
 
     if vad_options is not None:
@@ -506,10 +497,8 @@ def load_model(
         match vad_method:
             case "silero":
                 vad_model = whisperx.vads.Silero(**default_vad_options)
-            case "pyannote" | _:
-                vad_model = whisperx.vads.Pyannote(
-                    torch.device(device), use_auth_token=None, **default_vad_options
-                )
+            case _:
+                vad_model = whisperx.vads.Silero(**default_vad_options)
 
     return FasterWhisperPipeline(
         model=model,

@@ -6,12 +6,17 @@ import warnings
 import numpy as np
 import torch
 
-from .alignment import align, load_align_model
-from .asr import load_model
-from .audio import load_audio
-from .diarize import DiarizationPipeline, assign_word_speakers
-from .utils import (LANGUAGES, TO_LANGUAGE_CODE, get_writer, optional_float,
-                    optional_int, str2bool)
+from whisperx.alignment import align, load_align_model
+from whisperx.asr import load_model
+from whisperx.audio import load_audio
+from whisperx.utils import (
+    LANGUAGES,
+    TO_LANGUAGE_CODE,
+    get_writer,
+    optional_float,
+    optional_int,
+    str2bool,
+)
 
 
 def cli():
@@ -39,15 +44,8 @@ def cli():
     parser.add_argument("--return_char_alignments", action='store_true', help="Return character-level alignments in the output json file")
 
     # vad params
-    parser.add_argument("--vad_method", type=str, default="pyannote", choices=["pyannote", "silero"], help="VAD method to be used")
-    parser.add_argument("--vad_onset", type=float, default=0.500, help="Onset threshold for VAD (see pyannote.audio), reduce this if speech is not being detected")
-    parser.add_argument("--vad_offset", type=float, default=0.363, help="Offset threshold for VAD (see pyannote.audio), reduce this if speech is not being detected.")
+    parser.add_argument("--vad_method", type=str, default="silero", choices=["silero"], help="VAD method to be used")
     parser.add_argument("--chunk_size", type=int, default=30, help="Chunk size for merging VAD segments. Default is 30, reduce this if the chunk is too long.")
-
-    # diarization params
-    parser.add_argument("--diarize", action="store_true", help="Apply diarization to assign speaker labels to each segment/word")
-    parser.add_argument("--min_speakers", default=None, type=int, help="Minimum number of speakers to in audio file")
-    parser.add_argument("--max_speakers", default=None, type=int, help="Maximum number of speakers to in audio file")
 
     parser.add_argument("--temperature", type=float, default=0, help="temperature to use for sampling")
     parser.add_argument("--best_of", type=optional_int, default=5, help="number of candidates when sampling with non-zero temperature")
@@ -75,8 +73,6 @@ def cli():
 
     parser.add_argument("--threads", type=optional_int, default=0, help="number of threads used by torch for CPU inference; supercedes MKL_NUM_THREADS/OMP_NUM_THREADS")
 
-    parser.add_argument("--hf_token", type=str, default=None, help="Hugging Face Access Token to access PyAnnote gated models")
-
     parser.add_argument("--print_progress", type=str2bool, default = False, help = "if True, progress will be printed in transcribe() and align() methods.")
     # fmt: on
 
@@ -96,17 +92,14 @@ def cli():
     align_model: str = args.pop("align_model")
     interpolate_method: str = args.pop("interpolate_method")
     no_align: bool = args.pop("no_align")
-    task : str = args.pop("task")
+    task: str = args.pop("task")
     if task == "translate":
         # translation cannot be aligned
         no_align = True
 
     return_char_alignments: bool = args.pop("return_char_alignments")
 
-    hf_token: str = args.pop("hf_token")
     vad_method: str = args.pop("vad_method")
-    vad_onset: float = args.pop("vad_onset")
-    vad_offset: float = args.pop("vad_offset")
 
     chunk_size: int = args.pop("chunk_size")
 
@@ -129,7 +122,9 @@ def cli():
                 f"{model_name} is an English-only model but received '{args['language']}'; using English instead."
             )
         args["language"] = "en"
-    align_language = args["language"] if args["language"] is not None else "en" # default to loading english if not specified
+    align_language = (
+        args["language"] if args["language"] is not None else "en"
+    )  # default to loading english if not specified
 
     temperature = args.pop("temperature")
     if (increment := args.pop("temperature_increment_on_fallback")) is not None:
@@ -165,19 +160,39 @@ def cli():
     if args["max_line_count"] and not args["max_line_width"]:
         warnings.warn("--max_line_count has no effect without --max_line_width")
     writer_args = {arg: args.pop(arg) for arg in word_options}
-    
+
     # Part 1: VAD & ASR Loop
     results = []
     tmp_results = []
     # model = load_model(model_name, device=device, download_root=model_dir)
-    model = load_model(model_name, device=device, device_index=device_index, download_root=model_dir, compute_type=compute_type, language=args['language'], asr_options=asr_options, vad_method=vad_method, vad_options={"chunk_size":chunk_size, "vad_onset": vad_onset, "vad_offset": vad_offset}, task=task, threads=faster_whisper_threads)
+    model = load_model(
+        model_name,
+        device=device,
+        device_index=device_index,
+        download_root=model_dir,
+        compute_type=compute_type,
+        language=args["language"],
+        asr_options=asr_options,
+        vad_method=vad_method,
+        vad_options={
+            "chunk_size": chunk_size,
+        },
+        task=task,
+        threads=faster_whisper_threads,
+    )
 
     for audio_path in args.pop("audio"):
         audio = load_audio(audio_path)
         # >> VAD & ASR
         print(">>Performing transcription...")
         detect_language_per_segment = args.pop("detect_language_per_segment", False)
-        result = model.transcribe(audio, batch_size=batch_size, chunk_size=chunk_size, print_progress=print_progress, detect_language_per_segment=detect_language_per_segment)
+        result = model.transcribe(
+            audio,
+            batch_size=batch_size,
+            chunk_size=chunk_size,
+            print_progress=print_progress,
+            detect_language_per_segment=detect_language_per_segment,
+        )
         results.append((result, audio_path))
 
     # Unload Whisper and VAD
@@ -189,7 +204,9 @@ def cli():
     if not no_align:
         tmp_results = results
         results = []
-        align_model, align_metadata = load_align_model(align_language, device, model_name=align_model)
+        align_model, align_metadata = load_align_model(
+            align_language, device, model_name=align_model
+        )
         for result, audio_path in tmp_results:
             # >> Align
             if len(tmp_results) > 1:
@@ -201,10 +218,23 @@ def cli():
             if align_model is not None and len(result["segments"]) > 0:
                 if result.get("language", "en") != align_metadata["language"]:
                     # load new language
-                    print(f"New language found ({result['language']})! Previous was ({align_metadata['language']}), loading new alignment model for new language...")
-                    align_model, align_metadata = load_align_model(result["language"], device)
+                    print(
+                        f"New language found ({result['language']})! Previous was ({align_metadata['language']}), loading new alignment model for new language..."
+                    )
+                    align_model, align_metadata = load_align_model(
+                        result["language"], device
+                    )
                 print(">>Performing alignment...")
-                result = align(result["segments"], align_model, align_metadata, input_audio, device, interpolate_method=interpolate_method, return_char_alignments=return_char_alignments, print_progress=print_progress)
+                result = align(
+                    result["segments"],
+                    align_model,
+                    align_metadata,
+                    input_audio,
+                    device,
+                    interpolate_method=interpolate_method,
+                    return_char_alignments=return_char_alignments,
+                    print_progress=print_progress,
+                )
 
             results.append((result, audio_path))
 
@@ -213,22 +243,11 @@ def cli():
         gc.collect()
         torch.cuda.empty_cache()
 
-    # >> Diarize
-    if diarize:
-        if hf_token is None:
-            print("Warning, no --hf_token used, needs to be saved in environment variable, otherwise will throw error loading diarization model...")
-        tmp_results = results
-        print(">>Performing diarization...")
-        results = []
-        diarize_model = DiarizationPipeline(use_auth_token=hf_token, device=device)
-        for result, input_audio_path in tmp_results:
-            diarize_segments = diarize_model(input_audio_path, min_speakers=min_speakers, max_speakers=max_speakers)
-            result = assign_word_speakers(diarize_segments, result)
-            results.append((result, input_audio_path))
     # >> Write
     for result, audio_path in results:
         result["language"] = align_language
         writer(result, audio_path, writer_args)
+
 
 if __name__ == "__main__":
     cli()

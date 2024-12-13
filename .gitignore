@@ -4,3 +4,4 @@ whisperx.egg-info/
 build/
 dist/
 .vscode/
+.venv
