@@ -277,8 +277,6 @@ class FasterWhisperPipeline(Pipeline):
             chunk_size,
             onset=self._vad_params["vad_onset"],
             offset=self._vad_params["vad_offset"],
-            min_duration_on=self._vad_params["vad_min_duration_on"],
-            min_duration_off=self._vad_params["vad_min_duration_off"],
         )
 
         if not possible_languages:
