@@ -392,6 +392,7 @@ def load_model(
     compute_type="float16",
     asr_options=None,
     language: Optional[str] = None,
+    silero_repo_or_dir:str | None = None,
     vad_model=None,
     vad_method=None,
     vad_options=None,
@@ -405,6 +406,7 @@ def load_model(
         whisper_arch: str - The name of the Whisper model to load.
         device: str - The device to load the model on.
         compute_type: str - The compute type to use for the model.
+        silero_repo_or_dir: str | None - path to local or repo for torch hub
         vad_method: str - The vad method to use. vad_model has higher priority if is not None.
         options: dict - A dictionary of options to use for the model.
         language: str - The language of the model. (use English for now)
@@ -494,9 +496,9 @@ def load_model(
     else:
         match vad_method:
             case "silero":
-                vad_model = whisperx.vads.Silero(**default_vad_options)
+                vad_model = whisperx.vads.Silero(repo_or_dir=silero_repo_or_dir ,**default_vad_options)
             case _:
-                vad_model = whisperx.vads.Silero(**default_vad_options)
+                vad_model = whisperx.vads.Silero(repo_or_dir=silero_repo_or_dir ,**default_vad_options)
 
     return FasterWhisperPipeline(
         model=model,

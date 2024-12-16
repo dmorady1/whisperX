@@ -19,13 +19,14 @@ class SegmentX:
 
 class Silero(Vad):
     # check again default values
-    def __init__(self, **kwargs):
+    def __init__(self, repo_or_dir:str|None, **kwargs):
         print(">>Performing voice activity detection using Silero...")
         super().__init__(kwargs['vad_onset'])
 
         self.vad_onset = kwargs['vad_onset']
         self.chunk_size = kwargs['chunk_size']
-        self.vad_pipeline, vad_utils = torch.hub.load(repo_or_dir='snakers4/silero-vad',
+        repo_or_dir = repo_or_dir or 'snakers4/silero-vad'
+        self.vad_pipeline, vad_utils = torch.hub.load(repo_or_dir=repo_or_dir,
                                                       model='silero_vad',
                                                       force_reload=False,
                                                       onnx=False,
