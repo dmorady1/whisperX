@@ -6,11 +6,16 @@ from typing import Union
 
 import torch
 
-from whisperx.diarize import Segment as SegmentX
 from whisperx.vads.vad import Vad
 
 AudioFile = Union[Text, Path, IOBase, Mapping]
 
+
+class SegmentX:
+    def __init__(self, start, end, speaker=None):
+        self.start = start
+        self.end = end
+        self.speaker = speaker
 
 class Silero(Vad):
     # check again default values
