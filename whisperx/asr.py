@@ -496,9 +496,9 @@ def load_model(
     else:
         match vad_method:
             case "silero":
-                vad_model = whisperx.vads.Silero(repo_or_dir=silero_repo_or_dir ,**default_vad_options)
+                vad_model = whisperx.vads.Silero(repo_or_dir=silero_repo_or_dir, **default_vad_options)
             case _:
-                vad_model = whisperx.vads.Silero(repo_or_dir=silero_repo_or_dir ,**default_vad_options)
+                vad_model = whisperx.vads.Silero(repo_or_dir=silero_repo_or_dir, **default_vad_options)
 
     return FasterWhisperPipeline(
         model=model,
