@@ -11,10 +11,9 @@ import torch
 import torchaudio
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
 
-from .audio import SAMPLE_RATE, load_audio
-from .utils import interpolate_nans
-from .types import AlignedTranscriptionResult, SingleSegment, SingleAlignedSegment, SingleWordSegment
-import nltk
+from whisperx.audio import SAMPLE_RATE, load_audio
+from whisperx.utils import interpolate_nans
+from whisperx.types import AlignedTranscriptionResult, SingleSegment, SingleAlignedSegment, SingleWordSegment
 from nltk.tokenize.punkt import PunktSentenceTokenizer, PunktParameters
 
 PUNKT_ABBREVIATIONS = ['dr', 'vs', 'mr', 'mrs', 'prof']
@@ -81,8 +80,8 @@ def load_align_model(language_code, device, model_name=None, model_dir=None):
         align_dictionary = {c.lower(): i for i, c in enumerate(labels)}
     else:
         try:
-            processor = Wav2Vec2Processor.from_pretrained(model_name)
-            align_model = Wav2Vec2ForCTC.from_pretrained(model_name)
+            processor = Wav2Vec2Processor.from_pretrained(model_name, cache_dir=model_dir)
+            align_model = Wav2Vec2ForCTC.from_pretrained(model_name, cache_dir=model_dir)
         except Exception as e:
             print(e)
             print(f"Error loading model from huggingface, check https://huggingface.co/models for finetuned wav2vec2.0 models")
